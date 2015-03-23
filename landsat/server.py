@@ -17,6 +17,8 @@ import sys
 
 scene_list = None
 
+profile = Profile()
+
 class Cache(object):
     def __init__(self, path):
         self.path = path
