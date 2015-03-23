@@ -43,7 +43,8 @@ class Scene:
             ]
             for b in bands:
                 filename = "%s_B%s.TIF" % (self.entity_id, b)
-                cmd.append( filename )
+                src = self.root_url + "/" + filename
+                cmd.append( src )
             subprocess.call(cmd)
 
             # Now warp the VRT
