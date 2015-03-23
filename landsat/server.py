@@ -3,8 +3,7 @@ import tornado.escape
 import tornado.ioloop
 import tornado.web
 
-import Image
-
+from PIL import Image
 from tile import Profile, Tile
 
 try:
