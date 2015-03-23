@@ -16,11 +16,13 @@ class Scene:
         self.min_lat = float(min_lat)
         self.min_lon = float(min_lon)
         self.max_lat = float(max_lat)
-        self.max_lon = float(max_lon)   
+        self.max_lon = float(max_lon)
+        self.bounds = (self.min_lon, self.min_lat, self.max_lon, self.max_lat)   
         self.download_url = download_url.replace("\n", "")
         self.root_url = self.download_url.rstrip("/index.html")
         self.s3_root = self.root_url.replace("https://s3-us-west-2.amazonaws.com/landsat-pds", "s3://landsat-pds")
         self.vrt = os.path.join(cache_path, "%s.vrt" % self.entity_id)
+        self.dataset = None
 
     def ensure_local(self):
         if not os.path.exists(self.vrt):
@@ -43,18 +45,20 @@ class Scene:
             ]
             for b in bands:
                 filename = "%s_B%s.TIF" % (self.entity_id, b)
-                src = self.root_url + "/" + filename
-                cmd.append( src )
+                dest = os.path.join(cache_path, filename)
+                cmd.append( dest )
             subprocess.call(cmd)
 
             # Now warp the VRT
             cmd = [
                 "gdalwarp",
+                "-of", "VRT",
                 "-t_srs", "epsg:4326",
                 "%s" % merged_vrt,
                 "%s" % self.vrt
             ]
             subprocess.call(cmd)
+        if not self.dataset:
             self.dataset = GDALDataset(self.entity_id, self.vrt)
 
 
@@ -70,9 +74,18 @@ class SceneList:
                 self.scenes.append(Scene(parts[0], parts[1], parts[2], parts[3], parts[4], parts[5], parts[6], parts[7], parts[8], parts[9], parts[10] ))
 
     def select_scene(self, tile):
+        
+        #for s in self.scenes:
+        #    if tile.intersects(s.bounds):
+        #        return s
+        result = None
         for s in self.scenes:
-            b = (s.min_lon, s.min_lat, s.max_lon, s.max_lat)
-            if tile.intersects(b):
-                return s
-        return None
+            if tile.intersects(s.bounds) and s.cloud_cover >= 0.0:
+                if not result:
+                    result = s
+                else:
+                    if s.cloud_cover < result.cloud_cover:
+                        result = s
+        return result  
+        #return None
 

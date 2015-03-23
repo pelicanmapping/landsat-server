@@ -12,6 +12,7 @@ except ImportError:
     import StringIO
 
 import numpy as np
+import os
 
 import sys
 
@@ -47,6 +48,7 @@ cache = Cache("cache")
 def get_tile(layer, tile):
     global cache
     data = cache.get(layer.name, tile.x, tile.y, tile.z)
+    #data = None
     if data is None:
         #print "Cache miss"
         size=256
@@ -81,15 +83,15 @@ def save_array(data, ext):
 class TileHandler(tornado.web.RequestHandler):
 
     def get(self, z, x, y, ext):
-        if z < 8:
-            self.set_status(400)
+        if int(z) < 8:
+            self.set_status(404)
             self.finish()
             return
 
         tile = profile.get_tile(int(z), int(x), int(y) )
 
         # Now find the first scene that intersects this tile
-        scene = scene_list.select_scene(tile.bounds)
+        scene = scene_list.select_scene(tile)
         if not scene:
             print "Couldn't find scene"
             self.set_status(400)
@@ -98,9 +100,17 @@ class TileHandler(tornado.web.RequestHandler):
 
         scene.ensure_local()
         data = get_tile( scene.dataset, tile )
+        if data is None:
+            print "Couldn't read data"
+            self.set_status(400)
+            self.finish()
+            return
+        #print "Got data shape %s"
         
         # It's the raw 432 data in that order so scale it and return it
-        result = data * 255.0/50000.0
+        result = data * 255.0/30000.0
+        #result[:,:,3] *= .8
+        result = np.array(result, dtype=np.uint8)
         contents, content_type = save_array(result, ext)
         self.set_header("Content-Type", content_type)
         self.write(contents)
