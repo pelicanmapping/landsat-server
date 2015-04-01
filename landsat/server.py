@@ -84,9 +84,12 @@ class TileHandler(tornado.web.RequestHandler):
 
     def get(self, z, x, y, ext):
         if int(z) < 8:
+            print "Returning 404 for %s,%s,%s" % (z, x, y)
             self.set_status(404)
             self.finish()
             return
+
+        print "Processing tile %s,%s,%s" % (z,x,y)
 
         tile = profile.get_tile(int(z), int(x), int(y) )
 
@@ -113,10 +116,25 @@ class TileHandler(tornado.web.RequestHandler):
         result = np.array(result, dtype=np.uint8)
         contents, content_type = save_array(result, ext)
         self.set_header("Content-Type", content_type)
+        self.set_header("Access-Control-Allow-Origin", "*")
         self.write(contents)
         self.finish()
 
+class StatusHandler(tornado.web.RequestHandler):
+
+    def get(self):
+        self.write("Hi there")
+        self.finish()
+
+class TMSHandler(tornado.web.RequestHandler):
+    def get(self):
+        self.write("")
+        self.set_header("Access-Control-Allow-Origin", "*")
+        self.finish()
+
 application = tornado.web.Application([
+    (r"/index.html", StatusHandler),
+    #(r"/tiles/tilemapresource.xml", TMSHandler),
     (r"/tiles/([0-9]+)/([0-9]+)/([0-9]+).(.+)", TileHandler),
 ])
 
