@@ -54,6 +54,7 @@ class Scene:
                 "gdalwarp",
                 "-of", "VRT",
                 "-t_srs", "epsg:4326",
+                "-r", "bilinear",
                 "%s" % merged_vrt,
                 "%s" % self.vrt
             ]
